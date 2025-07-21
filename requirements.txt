@@ -1,0 +1,12 @@
+gradio
+langchain
+langchain-community
+huggingface-hub
+transformers
+sentence-transformers
+faiss-cpu
+PyPDF2
+python-docx
+python-pptx
+pandas
+markdown
