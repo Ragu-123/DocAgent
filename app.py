@@ -395,9 +395,16 @@ class CoordinatorAgent:
                 # Stream tokens directly
                 for chunk in self.current_response_stream:
                     # The token is in chunk.choices[0].delta.content for chat_completion
-                    token = chunk.choices[0].delta.content
-                    if token:
-                        yield token
+                    if hasattr(chunk, 'choices') and chunk.choices:
+                        token = chunk.choices[0].delta.content
+                        if token:
+                            yield token
+                    else:
+                        # Fallback for different response format
+                        if hasattr(chunk, 'token'):
+                            yield chunk.token
+                        elif isinstance(chunk, str):
+                            yield chunk
             except Exception as e:
                 yield f"Error streaming response: {e}"
             finally:
@@ -412,159 +419,319 @@ llm_response_agent = LLMResponseAgent(message_bus)
 coordinator_agent = CoordinatorAgent(message_bus)
 
 def create_interface():
-    """Create Gradio interface"""
-
+    """Create ChatGPT-style Gradio interface"""
+    
     with gr.Blocks(
-        theme=gr.themes.Soft(primary_hue="blue", secondary_hue="purple"),
+        theme=gr.themes.Base(),
         css="""
+        /* Dark theme styling */
         .gradio-container {
-            max-width: 1200px !important;
-            padding: 20px !important;
+            background-color: #1a1a1a !important;
+            color: #ffffff !important;
+            height: 100vh !important;
+            max-width: none !important;
+            padding: 0 !important;
         }
-        .header-text {
-            text-align: center;
-            color: #667eea;
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 10px;
+        
+        /* Main container */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
         }
-        .subheader-text {
-            text-align: center;
-            color: #666;
-            font-size: 1.2em;
-            margin-bottom: 20px;
+        
+        /* Header */
+        .header {
+            background: rgba(255, 193, 7, 0.1);
+            border-bottom: 1px solid rgba(255, 193, 7, 0.2);
+            padding: 1rem 2rem;
+            backdrop-filter: blur(10px);
         }
-        .upload-section {
-            border: 2px dashed #667eea;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            background-color: #f9f9f9;
+        
+        .header h1 {
+            color: #ffc107;
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
         }
+        
+        .header p {
+            color: #cccccc;
+            margin: 0.25rem 0 0 0;
+            font-size: 0.9rem;
+        }
+        
+        /* Chat area - REDUCED HEIGHT */
         .chat-container {
-            height: 500px;
-            margin-top: 10px;
-            border: 1px solid #ccc;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 1rem;
+            height: calc(100vh - 200px) !important; /* Reduced height */
+        }
+        
+        /* Chatbot styling - SMALLER */
+        .gradio-chatbot {
+            height: 300px !important; /* Reduced from 500px */
+            max-height: 300px !important;
+            background: transparent !important;
+            border: none !important;
+            margin-bottom: 1rem;
+            overflow-y: auto !important;
+            box-shadow: 0 0 12px rgba(255, 193, 7, 0.1);
+            
+        }
+        
+        /* Input area */
+        .input-area {
+            background: rgba(45, 45, 45, 0.6);
+            border-radius: 16px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            bottom: 0;
+        }
+        
+        /* File upload */
+        .upload-area {
+            background: rgba(255, 193, 7, 0.05);
+            border: 2px dashed rgba(255, 193, 7, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        /* Buttons - YELLOW SEND BUTTON */
+        .send-btn {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%) !important;
+            color: #000000 !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            min-height: 40px !important;
+        }
+        
+        .primary-btn {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%) !important;
+            color: #000000 !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+        }
+        
+        /* Text inputs */
+        .gradio-textbox input, .gradio-textbox textarea {
+            background: rgba(45, 45, 45, 0.8) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 193, 7, 0.2) !important;
+            border-radius: 8px !important;
+        }
+        
+        /* Processing indicator */
+        .processing-indicator {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
             border-radius: 8px;
-            padding: 10px;
-            background-color: #fff;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            color: #ffc107;
+            text-align: center;
         }
-        .gr-row {
-            margin-bottom: 15px;
+        
+        /* Input row styling */
+        .input-row {
+            display: flex !important;
+            gap: 10px !important;
+            align-items: end !important;
         }
-        .gr-column {
-            padding: 10px;
+        
+        /* Message input */
+        .message-input {
+            flex: 1 !important;
+            min-height: 40px !important;
         }
         """,
-        title="Agentic RAG Chatbot"
+        title="Agentic RAG Assistant"
     ) as iface:
 
         # Header
-        gr.HTML("""
-        <div class="header-text">Agentic RAG Chatbot</div>
-        <div class="subheader-text">Multi-Format Document QA with Model Context Protocol (MCP)</div>
-        """)
-
         with gr.Row():
-            with gr.Column(scale=1):
-                gr.Markdown("## Document Upload")
+            with gr.Column():
+                gr.HTML("""
+                <div class="header">
+                    <h1>Agentic RAG Assistant</h1>
+                    <p>Upload documents and ask questions - powered by Multi-Agent Architecture</p>
+                </div>
+                """)
 
+        # Main layout with sidebar and chat
+        with gr.Row():
+            # Left sidebar for file upload
+            with gr.Column(scale=1):
+                gr.Markdown("### 📁 Document Upload")
+                
                 file_upload = gr.File(
                     file_count="multiple",
                     file_types=[".pdf", ".pptx", ".csv", ".docx", ".txt", ".md"],
-                    label="Upload Documents (PDF, PPTX, CSV, DOCX, TXT, MD)",
-                    elem_classes=["upload-section"]
+                    label="Upload Documents",
+                    elem_classes=["upload-area"]
                 )
-
-                upload_status = gr.Textbox(
-                    label="Upload Status",
-                    interactive=False,
-                    max_lines=3
-                )
-
+                
+                processing_status = gr.HTML(visible=False)
+                
                 process_btn = gr.Button(
                     "Process Documents",
                     variant="primary",
-                    size="lg"
+                    elem_classes=["primary-btn"]
                 )
+                
+                # gr.Markdown("### ℹ️ Architecture")
+                # gr.Markdown("""
+                # **Multi-Agent System:**
+                # - 📄 **IngestionAgent**: Document parsing
+                # - 🔍 **RetrievalAgent**: Semantic search  
+                # - 🤖 **LLMAgent**: Response generation
+                # - 🎯 **CoordinatorAgent**: Workflow orchestration
+                
+                # **Features:**
+                # - Streaming responses
+                # - Multi-format support
+                # - Context-aware answers
+                # """)
 
-                gr.Markdown("## Architecture Info")
-                gr.Markdown("""
-                **Agents:**
-                - IngestionAgent: Document parsing
-                - RetrievalAgent: Semantic search  
-                - LLMResponseAgent: Response generation
-                - CoordinatorAgent: Workflow orchestration
-
-                **MCP Communication:** Structured message passing between agents
-                """)
-
-            with gr.Column(scale=3):
-                gr.Markdown("## Chat Interface")
-
+            # Right side - Chat interface
+            with gr.Column(scale=2):
+                gr.Markdown("### 💬 Chat Interface")
+                
+                # Chatbot with reduced height
                 chatbot = gr.Chatbot(
-                    height=500,
-                    elem_classes=["chat-container"],
+                    height=300,  # Reduced height
+                    elem_classes=["gradio-chatbot"],
                     show_copy_button=True,
-                    type="messages"
+                    type="messages",
+                    placeholder="Upload documents first, then start chatting!"
                 )
-
-                with gr.Row():
-                    msg = gr.Textbox(
-                        label="Ask a question about your documents...",
-                        placeholder="What are the key findings in the uploaded documents?",
+                
+                # Input area with improved layout
+                with gr.Row(elem_classes=["input-row"]):
+                    msg_input = gr.Textbox(
+                        placeholder="Ask about your documents...",
+                        label="Message",
                         scale=4,
+                        elem_classes=["message-input"],
+                        show_label=False,
                         autofocus=True
                     )
-                    submit_btn = gr.Button("Send", scale=1, variant="primary")
+                    send_btn = gr.Button(
+                        "Send", 
+                        scale=1, 
+                        elem_classes=["send-btn"],
+                        size="sm"
+                    )
 
+                # Examples
                 gr.Examples(
                     examples=[
-                        "What are the main topics discussed in the documents?",
-                        "Can you summarize the key findings?",
-                        "What metrics or KPIs are mentioned?",
-                        "What recommendations are provided?",
-                        "Are there any trends or patterns identified?"
+                        "What are the main topics discussed?",
+                        "Summarize the key findings",
+                        "What metrics are mentioned?",
+                        "What are the recommendations?"
                     ],
-                    inputs=msg
+                    inputs=msg_input,
+                    label="Example Questions"
                 )
 
+        # State to track document processing
+        doc_processed = gr.State(False)
+        
         # Event handlers
-        def process_files_handler(files):
-            return coordinator_agent.process_files(files)
+        def handle_file_upload_and_process(files):
+            if not files:
+                return gr.update(visible=False), False
+            
+            # Show processing indicator
+            processing_html = f"""
+            <div class="processing-indicator">
+                📄 Processing {len(files)} documents... Please wait.
+            </div>
+            """
+            
+            # Process files
+            try:
+                result = coordinator_agent.process_files(files)
+                
+                # Wait a moment for processing to complete
+                import time
+                time.sleep(3)
+                
+                success_html = """
+                <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); 
+                           border-radius: 8px; padding: 0.75rem; color: #4caf50; text-align: center;">
+                    Documents processed successfully! You can now ask questions.
+                </div>
+                """
+                return gr.update(value=success_html, visible=True), True
+                
+            except Exception as e:
+                error_html = f"""
+                <div style="background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.3); 
+                           border-radius: 8px; padding: 0.75rem; color: #f44336; text-align: center;">
+                    ❌ Error processing documents: {str(e)}
+                </div>
+                """
+                return gr.update(value=error_html, visible=True), False
 
-        def respond(message, history):
-            if message.strip():
+        def respond(message, history, doc_ready):
+            if not doc_ready:
+                # Show error message
                 history.append({"role": "user", "content": message})
-                history.append({"role": "assistant", "content": ""})
+                history.append({"role": "assistant", "content": " Please upload and process documents first."})
+                return history, ""
+            
+            if not message.strip():
+                return history, message
+            
+            # Add user message
+            history.append({"role": "user", "content": message})
+            history.append({"role": "assistant", "content": ""})
+            
+            # Stream response
+            try:
                 for token in coordinator_agent.handle_query(message, history):
                     history[-1]["content"] += token
                     yield history, ""
-            else:
-                yield history, message
+            except Exception as e:
+                history[-1]["content"] = f"❌ Error: {str(e)}"
+                yield history, ""
 
+        # Event bindings
         process_btn.click(
-            process_files_handler,
+            handle_file_upload_and_process,
             inputs=[file_upload],
-            outputs=[upload_status]
+            outputs=[processing_status, doc_processed]
         )
 
-        submit_btn.click(
+        send_btn.click(
             respond,
-            inputs=[msg, chatbot],
-            outputs=[chatbot, msg],
+            inputs=[msg_input, chatbot, doc_processed],
+            outputs=[chatbot, msg_input],
             show_progress=True
         )
 
-        msg.submit(
+        msg_input.submit(
             respond,
-            inputs=[msg, chatbot],
-            outputs=[chatbot, msg],
+            inputs=[msg_input, chatbot, doc_processed],
+            outputs=[chatbot, msg_input],
             show_progress=True
         )
 
     return iface
-
 
 # Launch the application
 if __name__ == "__main__":
