@@ -4,7 +4,7 @@
 
 ---
 
-## 📜 Overview
+## Overview
 
 **DocAgent** is a technically advanced, agent-based document QA system that uses Retrieval-Augmented Generation (RAG) and a Model Context Protocol (MCP) to orchestrate autonomous agents that parse, embed, retrieve, and generate answers from multi-format documents including PDF, PPTX, DOCX, CSV, TXT, and Markdown. 
 
@@ -12,7 +12,7 @@ It is implemented with LangChain, HuggingFace, FAISS, Gradio, and Open Source LL
 
 ---
 
-## 🧱 Architecture: Model Context Protocol (MCP) + Agents
+## Architecture: Model Context Protocol (MCP) + Agents
 
 ### MCP (Model Context Protocol)
 MCP is a lightweight, structured message-passing protocol between agents. Each agent receives, processes, and responds using `MCPMessage` over a `MessageBus`.
@@ -28,7 +28,7 @@ class MCPMessage:
 
 ---
 
-## 👷 Agents
+## Agents
 
 ### 1. IngestionAgent
 - Parses files in `.pdf`, `.pptx`, `.docx`, `.csv`, `.txt`, `.md`
@@ -55,14 +55,14 @@ class MCPMessage:
 
 ---
 
-## 🧠 Semantic Search + Vector Store
+## Semantic Search + Vector Store
 - All documents are embedded using HuggingFace Sentence Transformers
 - FAISS provides fast approximate nearest-neighbor search
 - Retrieval is controlled via top-k selection (default: `k=3`)
 
 ---
 
-## 🖥️ Gradio Interface
+## Gradio Interface
 
 The frontend is powered by a Gradio `Blocks` layout with custom CSS. It features:
 
@@ -81,7 +81,7 @@ The frontend is powered by a Gradio `Blocks` layout with custom CSS. It features
 
 ---
 
-## 🧪 Inference Pipeline Walkthrough
+## Inference Pipeline Walkthrough
 
 ```mermaid
 graph LR
@@ -95,7 +95,7 @@ graph LR
 
 ---
 
-## ⚙️ Tech Stack
+## Tech Stack
 
 | Layer              | Technology                                 |
 |-------------------|---------------------------------------------|
@@ -108,10 +108,18 @@ graph LR
 
 ---
 
-## 🔐 Environment Requirements
+## Environment Requirements and setup
 
 ```bash
 pip install gradio langchain faiss-cpu pandas python-docx python-pptx PyPDF2 huggingface_hub sentence-transformers
+```
+
+```python
+git clone https://github.com/Ragu-123/DocAgent.git && cd DocAgent
+```
+
+```python
+pip install -r requirements.txt
 ```
 
 Add your HuggingFace API key as an environment variable:
@@ -122,7 +130,7 @@ export hf_token=your_hf_token_here
 
 ---
 
-## 🚀 Run Locally
+## Run Locally
 
 ```bash
 python app.py
@@ -137,21 +145,21 @@ iface.launch(share=True)
 
 ---
 
-## 📦 Output
+## Output
 - Responses are streamed token-by-token
 - Sources are included inline
 - Supports concurrent queries and multiple file types
 
 ---
 
-## 🤖 Demo
+## Demo
 
 Try the live app on HuggingFace Spaces:
-👉 [DocAgent on HuggingFace](https://huggingface.co/spaces/ragunath-ravi/DocAgent)
+[DocAgent on HuggingFace](https://huggingface.co/spaces/ragunath-ravi/DocAgent)
 
 ---
 
-## 🧩 Future Enhancements
+## Future Enhancements
 - Multi-agent asynchronous coordination
 - LLM agent fine-tuning with document-type prompts
 - File deletion, update, and versioning
@@ -159,12 +167,12 @@ Try the live app on HuggingFace Spaces:
 
 ---
 
-## 📄 License
+## License
 Apache 2.0
 
 ---
 
-## 🧑‍💻 Author
+## Author
 **Ragunath Ravi**  
 Saveetha Engineering College  
 GitHub: [@ragunath-ravi](https://github.com/ragu-123)
